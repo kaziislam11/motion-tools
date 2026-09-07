@@ -88,11 +88,13 @@ Blender works on saved `.blend` files. Save your work first, including anything 
 - Humanoid rig fitting assumes a Z-up character in a T-pose. It is a starting skeleton, not a general-purpose auto-rigger. Joint placement and skinning need a visual check.
 - The animation presets are simple starting motions. They need refinement for a finished game.
 - Joint name mapping does not fix differences in bone axes or rest poses. Blender bones with active constraints need those controls baked or disabled in a copy first.
-- VFX supports ParticleEmitters and straight lasers made with native Beams. Trails and mesh effects are not implemented yet.
+- VFX supports ParticleEmitters, flat native Beams, and growing 3D energy columns with arrival and fade phases. Column playback is currently a Motion Tools preview feature; saved column definitions need a runtime integration for gameplay.
 - Preview effects fire once at their assigned times. They do not repeat when the animation loops.
 - Publishing animations and adding gameplay code are separate steps. This tool does not upload assets or create combat scripts.
 
-See the [tool reference](docs/tool-reference.md) for all 18 MCP tools, recipe details, and the Studio test checklist. There are also [example recipes](examples/) you can use as a starting point.
+See the [tool reference](docs/tool-reference.md) for all 20 MCP tools, recipe details, and the Studio test checklist. There are also [example recipes](examples/) you can use as a starting point.
+
+Animation review is an experimental pilot. The first native viewport capture attempt returned `Feature not supported yet.` in the tested Studio installation, so automatic capture is currently blocked there. The 3D column preview and save commands succeeded in Studio, but appearance still needs visual review. Automatic AI critique and revisions are not implemented. See [implementation status](docs/review-implementation-status.md) and [the evaluation plan](docs/review-evaluation.md).
 
 ## Development
 

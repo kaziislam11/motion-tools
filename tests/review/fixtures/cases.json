@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "status": "specification_only",
+  "notes": "These describe synthetic fixtures to construct and verify. They are not completed measurements or executable animation recipes.",
+  "cases": [
+    {
+      "id": "idle-control",
+      "base": "idle",
+      "variant": "control",
+      "duration": 2,
+      "loop": true,
+      "intent": "Gentle chest breathing with a continuous loop and stationary feet.",
+      "requiredTargets": ["LeftFoot sole contact", "RightFoot sole contact"],
+      "sampleTimes": [0, 0.5, 1, 1.5, 1.9, 1.966666667, 2],
+      "expectedDefect": null,
+      "verification": "Confirm smooth world-space torso motion near the loop boundary and fixed foot contacts."
+    },
+    {
+      "id": "idle-flawed",
+      "base": "idle",
+      "variant": "flawed",
+      "duration": 2,
+      "loop": true,
+      "intent": "Same breathing motion and planted contacts as idle-control.",
+      "injection": "Insert an UpperTorso key at 1.966666667 seconds offset by 25 degrees about local X from the smooth control pose, retaining the matching keys at 0 and 2 seconds.",
+      "sampleTimes": [0, 1.9, 1.933333333, 1.966666667, 2],
+      "expectedDefect": "A rapid torso snap immediately before loop closure, despite equal endpoint transforms.",
+      "verification": "Measure relative torso rotation changes over the last 30 Hz samples; corroborate with the side frames. Sparse images alone cannot establish full velocity."
+    },
+    {
+      "id": "run-control",
+      "base": "run",
+      "variant": "control",
+      "duration": 1,
+      "loop": true,
+      "intent": "A grounded run cycle with the left sole planted from 0.1 to 0.3 seconds.",
+      "requiredTargets": ["LeftFoot sole contact"],
+      "contactInterval": [0.1, 0.3],
+      "sampleTimes": [0, 0.1, 0.2, 0.3, 0.5, 0.75, 1],
+      "expectedDefect": null,
+      "verification": "Construct and verify a stationary world-space left sole point during the declared interval before admitting the control."
+    },
+    {
+      "id": "run-flawed",
+      "base": "run",
+      "variant": "flawed",
+      "duration": 1,
+      "loop": true,
+      "intent": "Same declared left sole contact interval as run-control.",
+      "contactInterval": [0.1, 0.3],
+      "injection": "Alter evaluated left foot motion to accumulate 0.4 studs of horizontal world-space displacement from 0.1 to 0.3 seconds while preserving vertical contact height and loop endpoints.",
+      "sampleTimes": [0, 0.1, 0.2, 0.3, 0.5, 1],
+      "expectedDefect": "The left sole slides during its explicitly planted interval.",
+      "verification": "Confirm 0.4 studs of displacement from the recorded contact point, using a ground reference in both camera views. Local joint translation is not itself the world-space ground truth."
+    },
+    {
+      "id": "guard-control",
+      "base": "sword_guard",
+      "variant": "control",
+      "duration": 3.2,
+      "loop": true,
+      "intent": "Breathing in a two-handed sword guard with both hands meeting separate sword grip targets.",
+      "requiredTargets": ["Sword primary grip", "Sword secondary grip", "LeftHand contact", "RightHand contact"],
+      "sampleTimes": [0, 0.8, 1.6, 2.4, 3.2],
+      "expectedDefect": null,
+      "verification": "Measure both hand contact-to-grip distances throughout the clip and establish a rig-specific control tolerance."
+    },
+    {
+      "id": "guard-flawed",
+      "base": "sword_guard",
+      "variant": "flawed",
+      "duration": 3.2,
+      "loop": true,
+      "intent": "Same two-handed grip requirement as guard-control.",
+      "injection": "Move the off-hand contact to create 0.5 studs of separation from its sword grip target at 1.6 seconds, blending from and back to the unchanged endpoint pose.",
+      "sampleTimes": [0, 0.8, 1.6, 2.4, 3.2],
+      "expectedDefect": "The off hand releases the required grip during the breathing motion.",
+      "verification": "Confirm contact-to-target distance in evaluated world transforms and frame the gap visibly in at least one view."
+    }
+  ]
+}

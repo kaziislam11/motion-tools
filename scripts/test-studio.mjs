@@ -4,7 +4,9 @@ const executable = process.env.LUAU_EXECUTABLE || '.local/tools/luau-0.737/luau.
 await mkdir('.local', {recursive:true});
 const source = await readFile('studio/Rig.lua','utf8');
 const tests = await readFile('tests/accessories.luau','utf8');
-await writeFile('.local/studio-tests.luau', `local game = {GetService=function() return {} end}\nlocal Rig = (function()\n${source}\nend)()\n${tests}`);
+const column = await readFile('studio/EnergyColumn.lua', 'utf8');
+const columnTests = await readFile('tests/energy-column.luau', 'utf8');
+await writeFile('.local/studio-tests.luau', `local game = {GetService=function() return {} end}\nlocal Rig = (function()\n${source}\nend)()\n${tests}\nlocal EnergyColumn = (function()\n${column}\nend)()\n${columnTests}`);
 const result = spawnSync(executable, ['.local/studio-tests.luau'], {encoding:'utf8'});
 if (result.error) throw result.error;
 process.stdout.write(result.stdout);

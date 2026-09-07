@@ -22,8 +22,19 @@ export const vfxSchema = z.object({
   texture: z.string().regex(/^rbxassetid:\/\/\d+$/).optional(),
   beam: z.object({ length: z.number().finite().min(0.1).max(100) }).strict().optional()
     .describe('Render a straight laser along local -Z instead of particles. Size is width and lifetime is preview duration.'),
+  column: z.object({
+    length: z.number().finite().min(0.1).max(100),
+    travelTime: z.number().finite().min(0.05).max(5),
+    fadeTime: z.number().finite().min(0.05).max(2).default(0.25),
+    origin: z.enum(['attachment', 'hands']).default('attachment'),
+  }).strict().optional().describe('Growing 3D energy column along local -Z. Size is diameter; lifetime includes travel, hold, and fade.'),
 }).strict();
 export const recipeSchema = z.discriminatedUnion('kind', [animationSchema, vfxSchema]).superRefine((recipe, ctx) => {
+  if (recipe.kind === 'vfx') {
+    if (recipe.beam && recipe.column) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Choose beam or column, not both.' });
+    if (recipe.column && recipe.column.travelTime + recipe.column.fadeTime >= recipe.lifetime) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Column lifetime must leave a hold interval after travel and before fade.' });
+    return;
+  }
   if (recipe.kind !== 'animation') return;
   const issue = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
   if (new Set(recipe.tracks.map(t => t.joint)).size !== recipe.tracks.length) issue('Each joint must have exactly one track.');

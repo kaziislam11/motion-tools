@@ -2,6 +2,8 @@ local RunService = game:GetService("RunService")
 local Preview = {}
 local active, connection, priorArchivable
 
+function Preview.model() return active end
+
 function Preview.stop()
     if connection then connection:Disconnect(); connection = nil end
     if active then active:Destroy(); active = nil end
@@ -45,7 +47,7 @@ function Preview.start(model, payload)
                 if not clone.Parent or elapsed > payload.seconds then Preview.stop(); return end
                 local time = elapsed
                 if payload.animation then
-                    time = payload.animation.loop and (elapsed % payload.animation.duration) or math.min(elapsed, payload.animation.duration)
+                    time = payload.sampleTime or (payload.animation.loop and (elapsed % payload.animation.duration) or math.min(elapsed, payload.animation.duration))
                     for _, node in nodes do
                         if node.target then
                             local value = tracks[node.name] and Authoring.sample(tracks[node.name], time) or CFrame.identity
@@ -62,8 +64,10 @@ function Preview.start(model, payload)
                 for _, cue in cues do
                     if not cue.fired and elapsed >= cue.time then
                         cue.fired = true
-                        Authoring.effect(cue.part, cue.recipe, true)
+                        local attachment
+                        attachment, cue.controller = Authoring.effect(cue.part, cue.recipe, true)
                     end
+                    if cue.controller then cue.controller.update(elapsed - cue.time) end
                 end
             end)
             if not tickOk then warn("Motion preview stopped: " .. tostring(tickError)); Preview.stop() end

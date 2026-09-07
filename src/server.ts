@@ -38,7 +38,7 @@ export function createMcp(library: Library, queue: Queue, blender: Blender) {
   };
 
   add('motion_capabilities', 'Discover available authoring operations, presets, limits, and connection requirements.', {}, readOnly, () => ({
-    animations: ['idle', 'walk', 'cast', 'slash', 'custom keyframes'], vfx: ['charge', 'impact', 'heal', 'custom particle emitter'],
+    animations: ['idle', 'walk', 'cast', 'slash', 'custom keyframes'], vfx: ['charge', 'impact', 'heal', 'custom particle emitter', 'beam', 'growing 3D energy column'],
     studio: ['inspect Motor6D/Bone rigs', 'connect rigid parts', 'save KeyframeSequence', 'save VFX attachment', 'preview animation with timed VFX on a clone'],
     blender: ['inspect saved .blend', 'fit 16-bone humanoid guide', 'automatic skin weights with audit', 'create bone animation', 'export active FBX clip'],
     limits: { animationSeconds: 30, totalKeys: 4096, previewSeconds: 30, maxParticleBurst: 500, maxMeshVerticesForRigging: 200000 },
@@ -50,6 +50,16 @@ export function createMcp(library: Library, queue: Queue, blender: Blender) {
   add('motion_animation_create', 'Create an editable simple animation preset in the library. Does not yet modify a rig. Local joint axes need visual review.', { preset: motionPreset, name: label, duration: z.number().min(0.1).max(30).default(2), intensity: z.number().min(0.1).max(2).default(1) }, write, p => library.save(animationPreset(p.preset, p.name, p.duration, p.intensity)));
   add('motion_vfx_create', 'Create an editable native Roblox particle recipe. Read and revise the recipe to change color, size, speed, texture, or emission.', { preset: effectPreset, name: label }, write, p => library.save(vfxPreset(p.preset, p.name)));
   add('motion_studio_sessions', 'Inspect connected Studio places and selected model IDs. Select a rig in Studio before dispatching commands.', {}, readOnly, () => queue.listSessions());
+  add('motion_studio_capture_frame', 'Capture a frozen animation pose from the front or side on an isolated temporary stage. Requests native screenshot permission, temporarily moves the camera, and stops the current preview. PNG remains local; retrieve chunks before capturing another frame. Experimental until runtime verified.', {
+    sessionId, rigId, assetId: identifier, jointMap, time: z.number().finite().min(0).max(10), view: z.enum(['front', 'side']),
+  }, write, async p => {
+    const animation = await recipe(p.assetId, 'animation');
+    if (animation.kind !== 'animation' || p.time > animation.duration) throw new Error('Capture time is outside the animation.');
+    return submit(p.sessionId, 'capture_frame', { ...p, recipe: animation });
+  });
+  add('motion_studio_capture_chunk', 'Retrieve a bounded PNG hex chunk for a local file writer. Each chunk is at most 32768 bytes before encoding. Captures expire after 180 seconds or the next capture. Do not send raw chunks to a language model.', {
+    sessionId, captureId: identifier, index: z.number().int().min(0).max(63),
+  }, readOnly, p => submit(p.sessionId, 'capture_chunk', p));
   add('motion_studio_inspect', 'Queue inspection of a specific rig: parts, joints, animated names, and structural issues. Check job result for the report.', { sessionId, rigId }, readOnly, p => submit(p.sessionId, 'inspect', { rigId: p.rigId }));
   add('motion_studio_connect_parts', 'Create a Motor6D between two uniquely named parts without moving their rest positions. Rejects cycles, existing child motors and conflicting welds. Anchoring is preserved. Pivot is a world-space position in studs.', { sessionId, rigId, parentPart: label, childPart: label, name: label, pivot: vec3.optional() }, write, p => submit(p.sessionId, 'connect_parts', p));
   add('motion_studio_save_animation', 'Save a library animation as a new native KeyframeSequence in the rig\'s AnimSaves location, with an undo recording. New saves use a ServerStorage folder referenced by an ObjectValue. Does not upload or publish.', { sessionId, rigId, assetId: identifier, jointMap }, write, async p => submit(p.sessionId, 'save_animation', { ...p, recipe: await recipe(p.assetId, 'animation') }));

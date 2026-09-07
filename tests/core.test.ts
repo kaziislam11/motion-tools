@@ -28,6 +28,16 @@ test('laser recipes preserve particle compatibility and bound beam length', () =
   }
 });
 
+test('energy columns require bounded geometry and travel, hold, fade timing', () => {
+  const column = { ...vfxPreset('impact', 'Column'), lifetime: 1.8, column: { length: 18, travelTime: 0.4, fadeTime: 0.3 } };
+  assert.equal(recipeSchema.safeParse(column).success, true);
+  assert.equal(recipeSchema.safeParse({ ...column, beam: { length: 18 } }).success, false);
+  assert.equal(recipeSchema.safeParse({ ...column, lifetime: 0.7 }).success, false);
+  for (const length of [0, 101, Infinity]) {
+    assert.equal(recipeSchema.safeParse({ ...column, column: { ...column.column, length } }).success, false);
+  }
+});
+
 test('rejects invalid timeline, duplicate joints, non-finite values, and discontinuous loops', () => {
   for (const change of [
     (r: any) => { r.tracks[0].keys[1].time = -1; },

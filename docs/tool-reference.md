@@ -71,6 +71,14 @@ This does not replace your system installation. Reinstall the paired Studio plug
 
 Effects use native ParticleEmitters. Custom textures must be Roblox asset IDs you can access. The starter texture requires no upload. Saved emitters start disabled; their `EmitCount` attribute stores the burst count. See [custom-spark.json](../examples/custom-spark.json) for an example.
 
+A VFX recipe can instead include `"column": { "length": 18, "travelTime": 0.35, "fadeTime": 0.25, "origin": "hands" }`. This creates a growing 3D cylinder with a rounded leading edge, arrival flash, and fade. `size` is its diameter and `lifetime` includes travel, hold, and fade. Lifetime must exceed travelTime plus fadeTime. Origin defaults to `attachment`; `hands` requires R15 LeftHand, RightHand, and HumanoidRootPart and follows the hand midpoint along the root's forward direction. Column and beam modes are mutually exclusive. Saved columns contain a `MotionColumnRecipe` attribute for replay; they do not install gameplay scripts or damage logic.
+
+## Experimental review capture
+
+`motion_studio_capture_frame` takes rigId, assetId, jointMap, time (0-10 seconds), and view (`front` or `side`). It replaces the current preview, freezes the animation, moves the clone to an elevated stage, temporarily controls the camera, and requests a UI-free 960x540 PNG. Native screenshot permission is required. It restores its camera and removes its clone after the capture attempt.
+
+Retrieve the returned captureId with `motion_studio_capture_chunk`, supplying zero-based index. Each result contains at most 32768 bytes encoded as hex, below the existing bridge message limit. A local client should decode chunks into a PNG rather than feed hex to a model. The latest capture replaces the previous one and expires after 180 seconds; maximum file size is 2 MB. This bounded chunk transport is the pilot alternative to adding a new binary HTTP route. No image is sent to an AI provider automatically. Runtime availability, camera restoration, image framing, and PNG decoding remain pilot checks.
+
 For a continuous laser, add `"beam": { "length": 15 }` to a VFX recipe. This replaces the emitter with a colored Beam and a pale core, pointing along the parent part's local -Z axis. `offset` positions the start, `size` controls width, and `lifetime` controls preview duration. Length is limited to 100 studs. Particle-only settings are ignored in this mode. Saved beams start disabled; their parent attachment has a `Duration` attribute. Enable both Beam children for that duration when triggering them in gameplay. No collision or damage is added.
 
 Preview cues fire once at the requested times. Continuous emitters run until cleanup. Looping the animation does not repeat the cues. The tool does not add gameplay scripts to trigger saved effects.

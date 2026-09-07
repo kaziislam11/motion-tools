@@ -90,6 +90,11 @@ function Authoring.effect(parent, recipe, active)
     local attachment = Instance.new("Attachment")
     attachment.Name = recipe.name
     attachment.Position = Vector3.new(unpack(recipe.offset))
+    if recipe.column then
+        attachment:SetAttribute("MotionColumnRecipe", game:GetService("HttpService"):JSONEncode(recipe))
+        attachment.Parent = parent
+        return attachment, active and EnergyColumn.create(attachment, recipe) or nil
+    end
     if recipe.beam then
         local endpoint = Instance.new("Attachment")
         endpoint.Name = "Endpoint"

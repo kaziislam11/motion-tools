@@ -68,7 +68,9 @@ local function execute(command)
     assert(not RunService:IsRunning(), "Stop Play/Test mode before using Motion Tools.")
     local op, payload = command.operation, command.payload
     if op == "stop_preview" then return Preview.stop() end
+    if op == "capture_chunk" then return ReviewCapture.chunk(payload) end
     local model = Rig.resolve(payload.rigId)
+    if op == "capture_frame" then return ReviewCapture.frame(model, payload) end
     if op == "inspect" then return Rig.inspect(model) end
     if op == "preview" then
         local result = Preview.start(model, payload)
@@ -86,6 +88,9 @@ local function execute(command)
         if op == "save_vfx" then
             local attachment = Authoring.effect(Rig.part(model, payload.part), payload.recipe, false)
             attachment:SetAttribute("MotionAssetId", payload.assetId)
+            if payload.recipe.column then
+                return { saved = attachment.Name, kind = "Attachment", note = "3D column recipe saved in MotionColumnRecipe. Motion Tools can replay it; gameplay playback requires a separate runtime integration." }
+            end
             return { saved = attachment.Name, kind = "Attachment", note = payload.recipe.beam and "Laser saved disabled. Enable its Beam children for the Duration attribute, then disable them." or "Emitter saved disabled. EmitCount attribute stores its burst count." }
         end
         error("Unsupported operation: " .. tostring(op))

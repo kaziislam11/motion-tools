@@ -1,0 +1,13 @@
+local recipe = { lifetime = 2, column = { length = 20, travelTime = 0.5, fadeTime = 0.25 } }
+local start = EnergyColumn.sample(recipe, 0)
+assert(start.length == 0 and not start.arrived)
+local midway = EnergyColumn.sample(recipe, 0.25)
+assert(midway.length == 10 and not midway.arrived)
+local arrival = EnergyColumn.sample(recipe, 0.5)
+assert(arrival.length == 20 and arrival.arrived and arrival.impactAge == 0)
+assert(EnergyColumn.sample(recipe, 1).length == 20)
+assert(EnergyColumn.sample(recipe, 1.875).opacity == 0.5)
+assert(EnergyColumn.sample(recipe, 2).opacity == 0)
+assert(not EnergyColumn.sample(recipe, 3).arrived)
+assert(EnergyColumn.sample(recipe, 0.25).length == midway.length, "Replay must be deterministic")
+print("Energy column travel, arrival, hold, fade and replay passed")

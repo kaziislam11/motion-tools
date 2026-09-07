@@ -48,7 +48,9 @@ test('real MCP stdio client discovers tools, authors revisions, and reports offl
   try {
     await client.connect(transport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 18);
+    assert.equal(tools.tools.length, 20);
+    assert.ok(tools.tools.some(t => t.name === 'motion_studio_capture_frame'));
+    assert.ok(tools.tools.some(t => t.name === 'motion_studio_capture_chunk'));
     const created = await client.callTool({ name: 'motion_animation_create', arguments: { preset: 'cast', name: 'Test Cast', duration: 2 } });
     assert.ok(!created.isError, JSON.stringify(created));
     const asset = (created.structuredContent as { result: { id: string; recipe: { name: string; duration: number } } }).result;
