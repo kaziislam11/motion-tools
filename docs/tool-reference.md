@@ -1,0 +1,87 @@
+# Tool reference
+
+## MCP tools
+
+| Tools | Purpose |
+| --- | --- |
+| `motion_capabilities` | List presets, operations, and limits |
+| `motion_library_list`, `motion_library_read`, `motion_library_save` | Browse recipes and save immutable revisions |
+| `motion_animation_create`, `motion_vfx_create` | Create editable starter recipes |
+| `motion_studio_sessions`, `motion_studio_inspect` | Find selected rigs and inspect their joints |
+| `motion_studio_connect_parts` | Add a Motor6D between rigid parts |
+| `motion_studio_save_animation`, `motion_studio_save_vfx` | Save native objects with undo recordings |
+| `motion_studio_preview`, `motion_studio_stop_preview` | Preview animation and timed effects on a clone |
+| `motion_studio_job` | Check a queued command's result |
+| `motion_blender_inspect`, `motion_blender_rig_humanoid` | Inspect and rig a saved Blender model |
+| `motion_blender_animate`, `motion_blender_export_fbx` | Create an action and export a clip |
+
+## Studio commands
+
+Select a Model in Workspace before calling `motion_studio_sessions`. The result includes the session and selected model IDs needed by later commands. When multiple Studio sessions are connected, specify the session explicitly.
+
+Scene operations return a job ID. Call `motion_studio_job` to check its status:
+
+- `queued`: waiting for the plugin
+- `running`: delivered to Studio
+- `succeeded` or `failed`: confirmed by the plugin
+- `expired`: never delivered within the allowed time
+- `unknown`: delivered, but no result arrived in time
+
+Inspect the scene before retrying an unknown result. Commands are delivered only once and target the model ID captured during inspection. Changing the selection does not redirect them.
+
+Rigid-part connections preserve rest positions and anchoring. Check anchors before using the rig in gameplay. Duplicate animated names and joint cycles are rejected. Rigs that combine Bone and Motor6D animation need a separately selected sub-rig in this version.
+
+## Animation recipes
+
+Each track has a joint name and at least two keys spanning zero through the animation's duration. A key contains:
+
+- `time`: seconds
+- `position`: local XYZ offset
+- `rotation`: local XYZ Euler angles in degrees
+
+Interpolation is linear. A looping clip must end at its starting pose. Markers such as `Release` are preserved. See [custom-idle.json](../examples/custom-idle.json) for a complete recipe.
+
+Use `jointMap` when recipe names differ from a rig's names. Motor6D animation targets use **Part1 names**, not the names of the Motor6D instances. Bone animation targets use bone names. Mapping names does not retarget local axes or rest poses.
+
+Studio saves use the rig's `AnimSaves` reference and a folder in ServerStorage, or an existing legacy AnimSaves folder. This follows Roblox's [local animation save model](https://create.roblox.com/docs/animation/editor). Loading these generated clips in the native editor still needs verification.
+
+## Blender
+
+The worker reads a saved `.blend` file in a separate Blender process. It does not see unsaved changes in an open window. Each authoring operation writes a new `.blend` and returns `blendFile`. Use that path for the next operation. Outputs and logs are stored in `artifacts/blender/`.
+
+Humanoid fitting assumes a Z-up T-pose and uses the mesh's bounding box to place a rough guide. Supply world-space landmarks to improve the fit. A-pose characters, creatures, clothing, and unusual proportions need more work. Inspect shoulders, elbows, hips, and knees even when the numeric weight checks pass.
+
+Use `bind: false` to create just the armature. Automatic binding keeps the four strongest deform influences per vertex and normalizes them. FBX export rejects unweighted vertices or invalid influence counts. Familiar Roblox bone names do not by themselves make a model a valid R15 avatar or Marketplace asset.
+
+Direct animation rejects active constraints on targeted bones. Bake or disable them in a copy first. Existing NLA tracks are muted in the output so they do not override the new action. Export includes the armature, bound meshes, and one active animation clip. Check scale and motion in Roblox's importer.
+
+### Portable Blender
+
+An optional helper downloads Blender 4.5.0 into the project and checks its official SHA-256 checksum:
+
+```powershell
+.\scripts\bootstrap-blender.ps1
+$env:BLENDER_EXECUTABLE = (Resolve-Path '.local\tools\blender-4.5.0-windows-x64\blender.exe').Path
+npm.cmd run setup
+```
+
+This does not replace your system installation. Reinstall the paired Studio plugin if you change connection settings after setup.
+
+## VFX
+
+Effects use native ParticleEmitters. Custom textures must be Roblox asset IDs you can access. The starter texture requires no upload. Saved emitters start disabled; their `EmitCount` attribute stores the burst count. See [custom-spark.json](../examples/custom-spark.json) for an example.
+
+Preview cues fire once at the requested times. Continuous emitters run until cleanup. Looping the animation does not repeat the cues. The tool does not add gameplay scripts to trigger saved effects.
+
+Animation preview evaluates joints directly on an anchored clone. Confirm final runtime behavior in the game after publishing.
+
+## Studio test checklist
+
+These checks remain to be run in the native application:
+
+- Connect the plugin and inspect a selected R15 rig.
+- Preview idle and cast recipes. Confirm the original rig stays unchanged.
+- Preview VFX on a hand. Stop the preview and confirm its clone and effects disappear.
+- Save a sequence and load it through the Animation Editor's animation list.
+- Save a VFX attachment, then use Undo. Confirm only that operation is undone.
+- Disconnect Studio before a queued command is delivered. Confirm it expires without running later.

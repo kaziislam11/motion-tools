@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.local/
+artifacts/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+/docs/superpowers/

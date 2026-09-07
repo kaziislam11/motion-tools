@@ -1,0 +1,17 @@
+{
+  "kind": "animation",
+  "name": "Quiet Idle",
+  "duration": 2,
+  "loop": true,
+  "tracks": [
+    {
+      "joint": "UpperTorso",
+      "keys": [
+        { "time": 0, "position": [0, 0, 0], "rotation": [0, 0, 0] },
+        { "time": 1, "position": [0, 0, 0], "rotation": [2, 0, 0] },
+        { "time": 2, "position": [0, 0, 0], "rotation": [0, 0, 0] }
+      ]
+    }
+  ],
+  "markers": []
+}
