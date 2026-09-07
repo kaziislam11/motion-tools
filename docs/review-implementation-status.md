@@ -4,6 +4,8 @@ Updated 2026-09-07.
 
 ## Completed work
 
+- Added a shared authoring workflow for models, animation and VFX: persistent briefs, reference fingerprints, staged candidates, image delivery, recorded reviews, immutable revision history and a three-attempt stage limit. The connected client supplies review judgments. This is separate from an autonomous reviewer or the uncompleted evaluation pilot. See [the workflow guide](authoring-workflow.md).
+
 - Added growing 3D energy column preview support: cylinder core, translucent outer layer, rounded leading edge, muzzle, arrival flash, hold, and fade.
 - Added a hand-midpoint origin option and prepared KamehamehaColumnHold with a longer firing pose.
 - Confirmed Studio acknowledged preview start and saving of the animation and column definition. Visual quality still needs user review.

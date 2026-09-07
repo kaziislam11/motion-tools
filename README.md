@@ -15,6 +15,7 @@ The project has three parts: a local MCP server, a small Studio plugin, and a Bl
 | VFX | Build particle effects with editable color, size, lifetime, speed, spread, and emission |
 | Preview | Preview an animation with timed effects on a temporary copy of a Studio rig |
 | Export | Save Roblox KeyframeSequences or export a Blender rig and its active animation to FBX |
+| Authoring workflow | Keep model, animation and VFX briefs, annotated references, preview evidence, reviews and revision history together |
 
 **Status: early development.** The Blender workflow has passed an automated test covering rigging, skin weights, mesh deformation, and FBX export/import. Studio inspection, preview dispatch, and animation/VFX saves have been exercised on an R15 avatar with AnimationConstraints. Visual quality, undo, and loading clips in the Animation Editor still need testing.
 
@@ -92,7 +93,21 @@ Blender works on saved `.blend` files. Save your work first, including anything 
 - Preview effects fire once at their assigned times. They do not repeat when the animation loops.
 - Publishing animations and adding gameplay code are separate steps. This tool does not upload assets or create combat scripts.
 
-See the [tool reference](docs/tool-reference.md) for all 20 MCP tools, recipe details, and the Studio test checklist. There are also [example recipes](examples/) you can use as a starting point.
+See the [tool reference](docs/tool-reference.md) for all 27 MCP tools, recipe details, and the Studio test checklist. There are also [example recipes](examples/) you can use as a starting point.
+
+## Work from references
+
+For a substantial modeling, animation or VFX request, ask the client to start a Motion Tools workflow. The brief keeps your original request, annotated local references, requirements and things to avoid. The client receives a stage plan and specific review guidance:
+
+- Models: silhouette, surfaces, rigging.
+- Animation: key poses, timing, polish.
+- VFX: shape, timing, integration.
+
+The client still creates the asset using the existing tools. It then attaches the candidate file and at least two preview images. Motion Tools can return these images to compatible MCP clients for inspection. Reviews must cover every requirement and exclusion and cite that candidate's evidence. Failed or uncertain findings keep the same stage open. Three attempts require a revised approach.
+
+Files are fingerprinted so changed previews cannot silently inherit an earlier review. Briefs and review history persist across restarts in the ignored `artifacts/workflows/` directory. Preserve candidate files under distinct names; the workflow stores their paths and hashes, not backup copies.
+
+This is an authoring workflow, not an autonomous art critic. The connected AI supplies the judgment, and a recorded review does not certify quality. Other MCP servers and existing low-level tools can bypass the workflow. Studio capture is still experimental, so exported images can be attached manually. See [the workflow guide](docs/authoring-workflow.md).
 
 Animation review is an experimental pilot. The first native viewport capture attempt returned `Feature not supported yet.` in the tested Studio installation, so automatic capture is currently blocked there. The 3D column preview and save commands succeeded in Studio, but appearance still needs visual review. Automatic AI critique and revisions are not implemented. See [implementation status](docs/review-implementation-status.md) and [the evaluation plan](docs/review-evaluation.md).
 

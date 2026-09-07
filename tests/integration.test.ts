@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -48,7 +48,8 @@ test('real MCP stdio client discovers tools, authors revisions, and reports offl
   try {
     await client.connect(transport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 20);
+    assert.equal(tools.tools.length, 27);
+    assert.ok(tools.tools.some(t => t.name === 'motion_workflow_start'));
     assert.ok(tools.tools.some(t => t.name === 'motion_studio_capture_frame'));
     assert.ok(tools.tools.some(t => t.name === 'motion_studio_capture_chunk'));
     const created = await client.callTool({ name: 'motion_animation_create', arguments: { preset: 'cast', name: 'Test Cast', duration: 2 } });
@@ -64,5 +65,19 @@ test('real MCP stdio client discovers tools, authors revisions, and reports offl
     assert.match(JSON.stringify(offline.content), /Connect one Studio plugin/);
     const revised = await client.callTool({ name: 'motion_library_save', arguments: { parentId: asset.id, recipe: { ...asset.recipe, name: 'Revised Cast' } } });
     assert.ok(!revised.isError, JSON.stringify(revised));
+    const referencePath = join(directory, 'reference.png');
+    const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64');
+    await writeFile(referencePath, imageBytes);
+    const started = await client.callTool({ name: 'motion_workflow_start', arguments: { brief: {
+      name: 'Reference test', kind: 'animation', request: 'A grounded fighting stance', approach: 'Review key poses before timing',
+      requirements: [{ id: 'feet', description: 'Feet remain planted' }], avoid: ['Foot sliding'], references: [{ path: referencePath, useFor: 'Test transport only' }],
+    } } });
+    assert.ok(!started.isError, JSON.stringify(started));
+    const workflow = (started.structuredContent as { result: { workflow: { id: string }; next: { stage: string } } }).result;
+    assert.equal(workflow.next.stage, 'key_poses');
+    const evidence = await client.callTool({ name: 'motion_workflow_read_evidence', arguments: { workflowId: workflow.workflow.id, referenceIndex: 0 } });
+    const content = evidence.content as { type: string; data?: string; mimeType?: string }[];
+    assert.equal(content[0]!.type, 'image'); assert.equal(content[0]!.mimeType, 'image/png');
+    assert.equal(content[0]!.data, imageBytes.toString('base64'));
   } finally { await client.close(); await transport.close(); }
 });

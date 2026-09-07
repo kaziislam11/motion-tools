@@ -5,6 +5,9 @@
 | Tools | Purpose |
 | --- | --- |
 | `motion_capabilities` | List presets, operations, and limits |
+| `motion_workflow_start`, `motion_workflow_list`, `motion_workflow_read` | Start and resume briefs and staged authoring for models, animation and VFX |
+| `motion_workflow_revise_brief` | Preserve feedback or a revised approach and restart stage review |
+| `motion_workflow_attach_candidate`, `motion_workflow_read_evidence`, `motion_workflow_review` | Attach fingerprinted files, inspect images, and record requirement and exclusion findings |
 | `motion_library_list`, `motion_library_read`, `motion_library_save` | Browse recipes and save immutable revisions |
 | `motion_animation_create`, `motion_vfx_create` | Create editable starter recipes |
 | `motion_studio_sessions`, `motion_studio_inspect` | Find selected rigs and inspect their joints |
@@ -12,8 +15,11 @@
 | `motion_studio_save_animation`, `motion_studio_save_vfx` | Save native objects with undo recordings |
 | `motion_studio_preview`, `motion_studio_stop_preview` | Preview animation and timed effects on a clone |
 | `motion_studio_job` | Check a queued command's result |
+| `motion_studio_capture_frame`, `motion_studio_capture_chunk` | Experimental frozen pose capture and PNG retrieval; unsupported in the tested Studio runtime |
 | `motion_blender_inspect`, `motion_blender_rig_humanoid` | Inspect and rig a saved Blender model |
 | `motion_blender_animate`, `motion_blender_export_fbx` | Create an action and export a clip |
+
+See the [authoring workflow guide](authoring-workflow.md) for the seven workflow tools, image limits, review rules and evidence limitations.
 
 ## Studio commands
 
