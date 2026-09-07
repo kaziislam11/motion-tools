@@ -16,7 +16,7 @@ The project has three parts: a local MCP server, a small Studio plugin, and a Bl
 | Preview | Preview an animation with timed effects on a temporary copy of a Studio rig |
 | Export | Save Roblox KeyframeSequences or export a Blender rig and its active animation to FBX |
 
-**Status: early development.** The Blender workflow has passed an automated test covering rigging, skin weights, mesh deformation, and FBX export/import. The MCP tests pass and the Studio plugin compiles. Playback, undo, and loading clips in the Animation Editor still need testing inside Studio.
+**Status: early development.** The Blender workflow has passed an automated test covering rigging, skin weights, mesh deformation, and FBX export/import. Studio inspection, preview dispatch, and animation/VFX saves have been exercised on an R15 avatar with AnimationConstraints. Visual quality, undo, and loading clips in the Animation Editor still need testing.
 
 ## Getting started
 
@@ -77,6 +77,10 @@ For Blender:
 
 The client interprets the request and calls the tools. Animation and effect recipes stay editable, and each saved revision gets its own file. Studio commands return a job ID so the client can check whether the operation actually finished.
 
+To watch again, click **Replay last preview** in Motion Tools. Each click restarts the animation and its timed effects on a fresh temporary copy. **Stop preview** removes the copy. The last preview is remembered until you close the experience; after reopening, ask the chat to preview your saved recipe once.
+
+R15 previews support Motor6D and AnimationConstraint joints. Rigid accessories follow welds, rigid constraints, or a uniquely matching avatar attachment. This carries accessories with the body; it does not simulate cape cloth or hair physics.
+
 Blender works on saved `.blend` files. Save your work first, including anything made through another Blender MCP. Each operation writes a new file and returns its path for the next step. The original file is preserved.
 
 ## Current limits
@@ -107,6 +111,8 @@ npm.cmd run test:blender
 The test creates its own mesh, rigs and animates it, checks that the vertices move, and re-imports the exported FBX. Results go in `.local/blender-test/`.
 
 Optional scripts in `scripts/` download checksum-verified copies of Blender 4.5.0 and Luau 0.737 into the project. See [verification](docs/verification.md) for the checks run so far.
+
+With Luau installed, run `node scripts/test-studio.mjs` for accessory binding regression checks. Set `LUAU_EXECUTABLE` if your Luau executable is elsewhere.
 
 ```text
 src/       MCP server, recipes, asset library, and application connections

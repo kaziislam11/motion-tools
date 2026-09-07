@@ -6,8 +6,9 @@ local TOKEN = "__BRIDGE_TOKEN__"
 local sessionId = HttpService:GenerateGUID(false)
 local connected, alive = false, true
 local toolbar = plugin:CreateToolbar("Motion Tools")
-local button = toolbar:CreateButton("Motion Tools", "Connect animation, rigging, and VFX tools", "")
-local info = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Right, false, false, 310, 260, 270, 200)
+local button = toolbar:CreateButton("MotionTools", "Connect animation, rigging, and VFX tools", "rbxasset://textures/sparkle.png", "Motion Tools")
+button.ClickableWhenViewportHidden = true
+local info = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Right, false, false, 310, 310, 270, 290)
 local widget = plugin:CreateDockWidgetPluginGuiAsync("RobloxMotionTools", info)
 widget.Title = "Motion Tools"
 local panel = Instance.new("Frame")
@@ -30,7 +31,9 @@ end
 text("TextLabel", "Select a rig, connect, then author through your AI chat.", 12, 48)
 local connectButton = text("TextButton", "Connect", 72, 36)
 local stopButton = text("TextButton", "Stop preview", 118, 32)
-local status = text("TextLabel", "Disconnected", 160, 76)
+local replayButton = text("TextButton", "Replay last preview", 160, 32)
+local status = text("TextLabel", "Disconnected", 202, 76)
+local lastPreview
 button.Click:Connect(function() widget.Enabled = not widget.Enabled end)
 connectButton.MouseButton1Click:Connect(function()
     connected = not connected
@@ -38,6 +41,13 @@ connectButton.MouseButton1Click:Connect(function()
     if not connected then Preview.stop(); status.Text = "Disconnected" end
 end)
 stopButton.MouseButton1Click:Connect(Preview.stop)
+replayButton.MouseButton1Click:Connect(function()
+    if not lastPreview then status.Text = "Ask your AI chat to preview an animation first."; return end
+    local ok, result = pcall(function()
+        return Preview.start(Rig.resolve(lastPreview.rigId), lastPreview)
+    end)
+    status.Text = ok and "Replaying animation and effects" or tostring(result)
+end)
 
 local function request(path, payload)
     local response = HttpService:RequestAsync({ Url = BASE .. path, Method = "POST", Headers = { ["Content-Type"] = "application/json", Authorization = "Bearer " .. TOKEN }, Body = HttpService:JSONEncode(payload) })
@@ -60,7 +70,11 @@ local function execute(command)
     if op == "stop_preview" then return Preview.stop() end
     local model = Rig.resolve(payload.rigId)
     if op == "inspect" then return Rig.inspect(model) end
-    if op == "preview" then return Preview.start(model, payload) end
+    if op == "preview" then
+        local result = Preview.start(model, payload)
+        lastPreview = payload
+        return result
+    end
     return recording("Motion Tools: " .. op, function()
         if op == "connect_parts" then return Rig.connect(model, payload) end
         if op == "save_animation" then

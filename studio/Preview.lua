@@ -32,6 +32,7 @@ function Preview.start(model, payload)
             local _
             _, nodes, tracks = Authoring.tracks(clone, payload.animation, payload.jointMap or {})
         end
+        local accessories = Rig.accessoryBindings(clone)
         local cues = {}
         for _, cue in payload.effects do
             table.insert(cues, { time = cue.time, recipe = cue.recipe, part = Rig.part(clone, cue.part), fired = false })
@@ -48,12 +49,15 @@ function Preview.start(model, payload)
                     for _, node in nodes do
                         if node.target then
                             local value = tracks[node.name] and Authoring.sample(tracks[node.name], time) or CFrame.identity
-                            if node.target:IsA("Motor6D") then
+                            if Rig.isPartJoint(node.target) then
                                 -- Anchored clone parts do not move via the physics assembly solver.
                                 node.target.Part1.CFrame = node.target.Part0.CFrame * node.target.C0 * value * node.target.C1:Inverse()
                             else node.target.Transform = value end
                         end
                     end
+                end
+                for _, accessory in accessories do
+                    accessory.handle.CFrame = accessory.body.CFrame * accessory.offset
                 end
                 for _, cue in cues do
                     if not cue.fired and elapsed >= cue.time then

@@ -4,6 +4,60 @@ local ids = setmetatable({}, { __mode = "k" })
 local objects = setmetatable({}, { __mode = "v" })
 local Rig = {}
 
+function Rig.isPartJoint(item)
+    return item:IsA("Motor6D") or item:IsA("AnimationConstraint")
+end
+
+-- Anchored previews need to carry rigid accessories explicitly.
+function Rig.accessoryBindings(model)
+    local bindings, bodyAttachments = {}, {}
+    for _, item in model:GetDescendants() do
+        if item:IsA("Attachment") and item.Parent:IsA("BasePart") and not item:FindFirstAncestorOfClass("Accessory") then
+            bodyAttachments[item.Name] = bodyAttachments[item.Name] or {}
+            table.insert(bodyAttachments[item.Name], item.Parent)
+        end
+    end
+    for _, accessory in model:GetDescendants() do
+        if accessory:IsA("Accessory") then
+            local handle = accessory:FindFirstChild("Handle")
+            if handle and handle:IsA("BasePart") then
+                local body
+                for _, joint in model:GetDescendants() do
+                    local a, b
+                    if joint:IsA("Weld") or joint:IsA("WeldConstraint") then
+                        a, b = joint.Part0, joint.Part1
+                    elseif joint:IsA("RigidConstraint") then
+                        a = joint.Attachment0 and joint.Attachment0.Parent
+                        b = joint.Attachment1 and joint.Attachment1.Parent
+                    end
+                    local candidate = a == handle and b or (b == handle and a)
+                    if candidate and candidate:IsA("BasePart") and candidate:IsDescendantOf(model) and not candidate:FindFirstAncestorOfClass("Accessory") then
+                        body = candidate
+                        break
+                    end
+                end
+                if not body then
+                    for _, attachment in handle:GetChildren() do
+                        local matches = bodyAttachments[attachment.Name]
+                        if attachment:IsA("Attachment") and matches and #matches == 1 then
+                            body = matches[1]
+                            break
+                        end
+                    end
+                end
+                if body then
+                    for _, part in accessory:GetDescendants() do
+                        if part:IsA("BasePart") then
+                            table.insert(bindings, { handle = part, body = body, offset = body.CFrame:ToObjectSpace(part.CFrame) })
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return bindings
+end
+
 function Rig.id(instance)
     if not ids[instance] then
         ids[instance] = HttpService:GenerateGUID(false)
@@ -33,7 +87,7 @@ end
 function Rig.nodes(model)
     local motors, bones = {}, {}
     for _, item in model:GetDescendants() do
-        if item:IsA("Motor6D") then table.insert(motors, item) end
+        if Rig.isPartJoint(item) then table.insert(motors, item) end
         if item:IsA("Bone") then table.insert(bones, item) end
     end
     assert(#motors + #bones <= 256, "Rig exceeds the 256-joint limit.")
@@ -86,7 +140,7 @@ function Rig.inspect(model)
     for _, item in model:GetDescendants() do
         if item:IsA("BasePart") and #result.parts < 256 then
             table.insert(result.parts, { name = item.Name, anchored = item.Anchored })
-        elseif (item:IsA("Motor6D") or item:IsA("Bone")) and #result.joints < 256 then
+        elseif (Rig.isPartJoint(item) or item:IsA("Bone")) and #result.joints < 256 then
             table.insert(result.joints, { name = item.Name, kind = item.ClassName })
         end
     end
@@ -119,7 +173,7 @@ function Rig.connect(model, payload)
     assert(parent ~= child, "A part cannot be its own parent.")
     local upward = {}
     for _, item in model:GetDescendants() do
-        if item:IsA("Motor6D") and item.Part1 then
+        if Rig.isPartJoint(item) and item.Part1 then
             assert(item.Part1 ~= child, "Child already has a Motor6D. Inspect or edit the existing joint.")
             upward[item.Part1] = item.Part0
         end
