@@ -86,7 +86,7 @@ local function execute(command)
         if op == "save_vfx" then
             local attachment = Authoring.effect(Rig.part(model, payload.part), payload.recipe, false)
             attachment:SetAttribute("MotionAssetId", payload.assetId)
-            return { saved = attachment.Name, kind = "Attachment", note = "Emitter saved disabled. EmitCount attribute stores its burst count." }
+            return { saved = attachment.Name, kind = "Attachment", note = payload.recipe.beam and "Laser saved disabled. Enable its Beam children for the Duration attribute, then disable them." or "Emitter saved disabled. EmitCount attribute stores its burst count." }
         end
         error("Unsupported operation: " .. tostring(op))
     end)

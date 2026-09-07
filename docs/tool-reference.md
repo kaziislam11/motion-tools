@@ -71,6 +71,8 @@ This does not replace your system installation. Reinstall the paired Studio plug
 
 Effects use native ParticleEmitters. Custom textures must be Roblox asset IDs you can access. The starter texture requires no upload. Saved emitters start disabled; their `EmitCount` attribute stores the burst count. See [custom-spark.json](../examples/custom-spark.json) for an example.
 
+For a continuous laser, add `"beam": { "length": 15 }` to a VFX recipe. This replaces the emitter with a colored Beam and a pale core, pointing along the parent part's local -Z axis. `offset` positions the start, `size` controls width, and `lifetime` controls preview duration. Length is limited to 100 studs. Particle-only settings are ignored in this mode. Saved beams start disabled; their parent attachment has a `Duration` attribute. Enable both Beam children for that duration when triggering them in gameplay. No collision or damage is added.
+
 Preview cues fire once at the requested times. Continuous emitters run until cleanup. Looping the animation does not repeat the cues. The tool does not add gameplay scripts to trigger saved effects.
 
 Animation preview evaluates joints directly on an anchored clone. Confirm final runtime behavior in the game after publishing.

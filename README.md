@@ -88,7 +88,7 @@ Blender works on saved `.blend` files. Save your work first, including anything 
 - Humanoid rig fitting assumes a Z-up character in a T-pose. It is a starting skeleton, not a general-purpose auto-rigger. Joint placement and skinning need a visual check.
 - The animation presets are simple starting motions. They need refinement for a finished game.
 - Joint name mapping does not fix differences in bone axes or rest poses. Blender bones with active constraints need those controls baked or disabled in a copy first.
-- VFX currently uses ParticleEmitters. Beams, trails, and mesh effects are not implemented yet.
+- VFX supports ParticleEmitters and straight lasers made with native Beams. Trails and mesh effects are not implemented yet.
 - Preview effects fire once at their assigned times. They do not repeat when the animation loops.
 - Publishing animations and adding gameplay code are separate steps. This tool does not upload assets or create combat scripts.
 

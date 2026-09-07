@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { animationPreset, recipeSchema } from '../src/recipes.js';
+import { animationPreset, recipeSchema, vfxPreset } from '../src/recipes.js';
 import { Library } from '../src/library.js';
 import { Queue } from '../src/bridge.js';
 
@@ -16,6 +16,16 @@ test('walk loops close and changing speed preserves normalized motion', () => {
   }
   assert.equal(b.tracks[0]?.keys.at(-1)?.time, 1);
   assert.deepEqual(a.tracks[0]?.keys[1]?.rotation, b.tracks[0]?.keys[1]?.rotation);
+});
+
+test('laser recipes preserve particle compatibility and bound beam length', () => {
+  const particle = vfxPreset('impact', 'Impact');
+  assert.equal(recipeSchema.safeParse(particle).success, true);
+  const laser = { ...particle, beam: { length: 15 } };
+  assert.equal(recipeSchema.safeParse(laser).success, true);
+  for (const length of [-1, 0, 101, Infinity, NaN]) {
+    assert.equal(recipeSchema.safeParse({ ...laser, beam: { length } }).success, false);
+  }
 });
 
 test('rejects invalid timeline, duplicate joints, non-finite values, and discontinuous loops', () => {

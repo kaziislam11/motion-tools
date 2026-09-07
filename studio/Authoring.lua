@@ -90,6 +90,37 @@ function Authoring.effect(parent, recipe, active)
     local attachment = Instance.new("Attachment")
     attachment.Name = recipe.name
     attachment.Position = Vector3.new(unpack(recipe.offset))
+    if recipe.beam then
+        local endpoint = Instance.new("Attachment")
+        endpoint.Name = "Endpoint"
+        endpoint.Position = Vector3.new(0, 0, -recipe.beam.length)
+        endpoint.Parent = attachment
+        local beams = {}
+        for _, layer in { { "Glow", 1, Color3.new(unpack(recipe.color)), 0.25 }, { "Core", 0.35, Color3.new(0.85, 0.97, 1), 0 } } do
+            local beam = Instance.new("Beam")
+            beam.Name = layer[1]
+            beam.Attachment0, beam.Attachment1 = attachment, endpoint
+            beam.Width0, beam.Width1 = recipe.size * layer[2], recipe.size * layer[2]
+            beam.Color = ColorSequence.new(layer[3])
+            beam.Transparency = NumberSequence.new(layer[4])
+            beam.FaceCamera = true
+            beam.LightEmission, beam.LightInfluence = recipe.lightEmission, 0
+            beam.Segments = 1
+            beam.Enabled = active
+            beam.Parent = attachment
+            table.insert(beams, beam)
+        end
+        attachment:SetAttribute("Duration", recipe.lifetime)
+        attachment.Parent = parent
+        if active then
+            task.delay(recipe.lifetime, function()
+                for _, beam in beams do
+                    if beam.Parent then beam.Enabled = false end
+                end
+            end)
+        end
+        return attachment
+    end
     local emitter = Instance.new("ParticleEmitter")
     emitter.Name = "Particles"
     emitter.Texture = recipe.texture or "rbxasset://textures/particles/sparkles_main.dds"

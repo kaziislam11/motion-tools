@@ -20,6 +20,8 @@ export const vfxSchema = z.object({
   lightEmission: z.number().finite().min(0).max(1).default(0.7),
   offset: boundedVector(20).default([0, 0, 0]),
   texture: z.string().regex(/^rbxassetid:\/\/\d+$/).optional(),
+  beam: z.object({ length: z.number().finite().min(0.1).max(100) }).strict().optional()
+    .describe('Render a straight laser along local -Z instead of particles. Size is width and lifetime is preview duration.'),
 }).strict();
 export const recipeSchema = z.discriminatedUnion('kind', [animationSchema, vfxSchema]).superRefine((recipe, ctx) => {
   if (recipe.kind !== 'animation') return;
