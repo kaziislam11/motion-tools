@@ -1,8 +1,10 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage } from 'node:http';
 import { z } from 'zod';
+import type { Library } from './library.js';
+import { listSchema, readSchema, type MotionApp } from './app.js';
 
-type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'expired' | 'unknown';
+type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'expired' | 'unknown' | 'cancelled';
 export interface Job { id: string; sessionId: string; operation: string; payload: unknown; status: JobStatus; createdAt: number; deliveredAt?: number; result?: unknown }
 export class Queue {
   private sessions = new Map<string, { seenAt: number; snapshot: Record<string, unknown> }>();
@@ -41,6 +43,11 @@ export class Queue {
     }
     return null;
   }
+  cancelQueued(id: string) {
+    const job = this.jobs.get(id);
+    if (!job || job.status !== 'queued') return false;
+    job.status = 'cancelled'; return true;
+  }
   complete(sessionId: string, id: string, ok: boolean, result: unknown) {
     const job = this.jobs.get(id);
     if (!job || job.sessionId !== sessionId) throw new Error('Job does not belong to this session.');
@@ -58,23 +65,37 @@ export class Queue {
 
 const pollSchema = z.object({ sessionId: z.string().uuid(), snapshot: z.record(z.unknown()) }).strict();
 const resultSchema = z.object({ sessionId: z.string().uuid(), id: z.string().uuid(), ok: z.boolean(), result: z.unknown() }).strict();
-async function body(req: IncomingMessage) {
+async function body(req: IncomingMessage, limit = 512000) {
   const chunks: Buffer[] = []; let bytes = 0;
   for await (const chunk of req) {
     bytes += chunk.length;
-    if (bytes > 512000) throw new Error('Request exceeds 512 KB.');
+    if (bytes > limit) throw new Error(`Request exceeds ${limit} bytes.`);
     chunks.push(Buffer.from(chunk));
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
-export async function startBridge(queue: Queue, token: string, port: number) {
+export async function startBridge(queue: Queue, token: string, port: number, options?: { library: Library; app: MotionApp; files: Record<string, { type: string; content: string }> }) {
   const server = createServer(async (req, res) => {
     const respond = (code: number, value: unknown) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
     try {
+      if (!/^127\.0\.0\.1(?::\d+)?$/.test(req.headers.host ?? '')) return respond(403, { error: 'Invalid local host.' });
+      const localOrigin = `http://${req.headers.host}`;
+      const staticFile = options?.files[req.url ?? ''];
+      if (req.method === 'GET' && staticFile) {
+        res.writeHead(200, { 'Content-Type': staticFile.type, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
+        res.end(staticFile.content); return;
+      }
       const auth = Buffer.from(req.headers.authorization ?? '');
+      if (options && req.url?.startsWith('/app-api/')) {
+        const expectedApp = Buffer.from(`Bearer ${options.app.token}`);
+        if ((req.headers.origin && req.headers.origin !== localOrigin) || auth.length !== expectedApp.length || !timingSafeEqual(auth, expectedApp)) return respond(403, { error: 'Open Motion Tools using npm run app to connect this browser.' });
+        if (req.method !== 'POST' || !req.headers['content-type']?.startsWith('application/json')) return respond(405, { error: 'Use JSON POST.' });
+        return respond(200, await options.app.handle(req.url, await body(req, req.url === '/app-api/review-image' ? 2_100_000 : 512000)));
+      }
       const expected = Buffer.from(`Bearer ${token}`);
       if (req.headers.origin || !/^127\.0\.0\.1(?::\d+)?$/.test(req.headers.host ?? '') || auth.length !== expected.length || !timingSafeEqual(auth, expected)) return respond(403, { error: 'Invalid local pairing token, host, or browser origin.' });
-      if (req.method === 'GET' && req.url === '/health') return respond(200, { name: 'roblox-motion', version: 1 });
+      if (req.method === 'GET' && req.url === '/health') return respond(200, { name: 'roblox-motion', version: 1, release: '1.0.0', ...(options ? { app: true, animationLibrary: true, motionReview: true } : {}) });
       if (req.method !== 'POST' || !req.headers['content-type']?.startsWith('application/json')) return respond(404, { error: 'Use the Studio plugin.' });
       if (req.url === '/poll') {
         const data = pollSchema.parse(await body(req));
@@ -86,6 +107,11 @@ export async function startBridge(queue: Queue, token: string, port: number) {
         queue.complete(data.sessionId, data.id, data.ok, data.result);
         return respond(200, { accepted: true });
       }
+      if (options && req.url === '/library/list') {
+        const { offset, limit, kind } = listSchema.parse(await body(req));
+        return respond(200, await options.library.list(offset, limit, kind));
+      }
+      if (options && req.url === '/library/read') return respond(200, await options.library.get(readSchema.parse(await body(req)).id));
       respond(404, { error: 'Unknown endpoint.' });
     } catch (error) { respond(400, { error: error instanceof Error ? error.message : String(error) }); }
   });

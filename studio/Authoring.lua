@@ -29,6 +29,18 @@ function Authoring.tracks(model, recipe, mapping)
     return roots, nodes, tracks
 end
 
+-- Preview and inspection must evaluate exactly the same local joint transforms.
+function Authoring.apply(nodes, tracks, time)
+    for _, node in nodes do
+        if node.target then
+            local value = tracks[node.name] and Authoring.sample(tracks[node.name], time) or CFrame.identity
+            if Rig.isPartJoint(node.target) then
+                node.target.Part1.CFrame = node.target.Part0.CFrame * node.target.C0 * value * node.target.C1:Inverse()
+            else node.target.Transform = value end
+        end
+    end
+end
+
 function Authoring.sequence(model, recipe, mapping)
     local roots, _, tracks = Authoring.tracks(model, recipe, mapping)
     local times = {}

@@ -1,6 +1,6 @@
 {
   "name": "roblox-motion-mcp-server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Local MCP tools for Roblox rigging, editable animation, and VFX",
@@ -9,6 +9,7 @@
     "build": "tsc && node scripts/package-plugin.mjs",
     "setup": "npm run build && node scripts/setup.mjs",
     "start": "node dist/src/index.js",
+    "app": "node scripts/app.mjs",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "test:blender": "node scripts/test-blender.mjs"
   },

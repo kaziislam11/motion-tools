@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Motion Tools</title><link rel="stylesheet" href="/app.css"><script src="/review.js" defer></script><script src="/app.js" defer></script></head>
+<body>
+<header><a class="wordmark" href="/app">Motion Tools<span> / authoring desk</span></a><span class="local">V1 · LOCAL WORKSPACE</span></header>
+<main>
+  <section class="intro"><div><p class="eyebrow">FROM AN IDEA TO A MOVING CHARACTER</p><h1>Make the next move.</h1><p>Choose your AI, describe the motion, then try it on your rig.</p></div><p id="connectionStatus" role="status">Connecting to your local server...</p></section>
+  <div class="desk">
+    <aside>
+      <h2>01 / Your AI</h2>
+      <form id="connectionForm">
+        <label for="provider">Provider</label><select id="provider"></select>
+        <label for="model">Model ID</label><input id="model" required maxlength="160" autocomplete="off">
+        <label for="workspace">Claude workspace ID <span>(optional)</span></label><input id="workspace" maxlength="100" autocomplete="off" placeholder="Only if your API key requires one">
+        <label for="apiKey">API key</label><input id="apiKey" type="password" autocomplete="off" maxlength="2048" placeholder="Enter key on this device">
+        <label class="check"><input id="remember" type="checkbox">Remember with Windows encryption</label>
+        <div class="actions"><button type="submit">Save connection</button><button id="disconnect" type="button" class="quiet">Remove</button></div>
+      </form>
+      <p id="providerStatus" class="small" role="status"></p><a id="keysLink" target="_blank" rel="noreferrer">Get an API key ↗</a>
+      <p class="small">Calls use your provider's API balance. Keys stay in the local server and are sent only to that provider. Saving a key does not make a paid API call.</p>
+    </aside>
+    <section class="workspace">
+      <h2>02 / The brief</h2>
+      <form id="draftForm">
+        <div class="two"><div><label for="kind">Create</label><select id="kind"><option value="animation">Animation</option><option value="vfx">VFX</option></select></div><div><label for="rig">Target rig</label><select id="rig"><option value="">Standard R15 draft (no live rig)</option></select></div></div>
+        <label for="prompt">What should it do?</label><textarea id="prompt" rows="6" maxlength="4000" required placeholder="A heavy, exaggerated walk. Broad arm swings, clear heel contacts, a low pelvis on each step, and a little delay through the chest. Loop smoothly."></textarea>
+        <label class="check"><input id="revise" type="checkbox">Revise the selected library asset, keeping its original</label>
+        <label class="check"><input id="inspectAfter" type="checkbox" checked>Preview, inspect, and ask me for feedback after each draft</label>
+        <label class="check"><input id="aiReview" type="checkbox" checked>Ask my AI to review the pose data (one extra API call)</label>
+        <details><summary>Generation limits</summary><label for="maxTokens">Maximum generation output tokens per call</label><input id="maxTokens" type="number" value="12000" min="1024" max="32000" step="1"><label class="check"><input id="repair" type="checkbox">Allow one extra API call to repair invalid recipe data</label><p class="small">One generation call, plus one critique call when AI review is checked and Studio pose samples are available. A repair can use the full generation limit. Critique has a separate 2,500 output token limit.</p></details>
+        <div class="actions"><button id="generate" type="submit" class="primary">Generate draft</button><button id="cancel" type="button" class="quiet" disabled>Cancel</button></div>
+      </form>
+      <div id="draftStatus" class="notice" role="status" aria-live="polite">Drafts are saved to your library. Preview them before saving to Studio.</div>
+      <div id="plan" hidden><h3>Authoring notes</h3><p id="approach"></p><h3>Check in the preview</h3><ul id="checkpoints"></ul></div>
+    </section>
+    <section class="library">
+      <div class="section-head"><h2>03 / Your library</h2><button id="refresh" class="quiet" type="button">Refresh</button></div>
+      <label for="asset">Saved animations &amp; VFX</label><select id="asset"><option value="">Loading library...</option></select>
+      <p id="assetInfo" class="small">Every saved revision stays available here.</p>
+      <div class="two"><div><label for="seconds">Preview seconds</label><input id="seconds" type="number" value="10" min="0.1" max="30" step="0.1"></div><div><label for="part">VFX attachment part</label><input id="part" value="RightHand" maxlength="80"></div></div>
+      <div class="actions"><button id="preview" type="button">Preview selected</button><button id="stop" type="button" class="quiet">Stop</button><button id="save" type="button" class="quiet">Save to Studio</button></div>
+      <p id="studioStatus" class="small" role="status">Connect the Studio plugin and select a rig to preview.</p>
+    </section>
+    <section class="review" id="reviewPanel">
+      <div class="section-head"><h2>04 / Watch, judge, refine</h2><div class="actions"><button id="inspect" type="button">Inspect &amp; ask me</button><button id="cancelReview" type="button" class="quiet" disabled>Cancel inspection</button></div></div>
+      <p class="small">Inspect the selected library version, then tell the harness what to keep and change. Acceptance is your decision.</p>
+      <label for="motionMode">How will this motion be used?</label><select id="motionMode"><option value="unknown">Not sure yet</option><option value="in_place">In place, with movement handled by the game</option><option value="root_motion">The animation contains travel</option><option value="stationary">Stationary with planted contacts</option></select>
+      <p id="reviewStatus" class="notice" role="status" aria-live="polite">Select an asset to inspect or continue its review.</p>
+      <div id="reviewContent" hidden>
+        <div id="poseViewer" hidden>
+          <p class="small"><strong>Pose diagram from Studio samples.</strong> This shows joint positions. Judge the actual character, clothing and effects in the Studio preview.</p>
+          <div class="poseViews"><figure><figcaption>Front</figcaption><canvas id="poseFront" width="400" height="340" aria-label="Front view of sampled joint positions"></canvas></figure><figure><figcaption>Side</figcaption><canvas id="poseSide" width="400" height="340" aria-label="Side view of sampled joint positions"></canvas></figure></div>
+          <label for="sampleTime" id="sampleLabel">Sample time</label><input id="sampleTime" type="range" min="0" max="1" step="1" value="0"><button id="playSamples" type="button" class="quiet">Play samples</button>
+        </div>
+        <div id="motionFindings"></div>
+        <details><summary>Measured values and inspection limits</summary><div id="motionMetrics"></div><ul id="inspectionLimits"></ul></details>
+        <details id="evidenceDetails"><summary>Add screenshots for a visual critique</summary>
+          <p class="small">Attach a screenshot of this exact version. The app resizes it to PNG locally. Your selected AI receives these images only when you click Ask AI below.</p>
+          <div class="two"><div><label for="evidenceView">View</label><select id="evidenceView"><option value="front">Front</option><option value="side">Side</option><option value="detail">Detail</option></select></div><div><label for="evidenceTime">Clip time in seconds (optional)</label><input id="evidenceTime" type="number" min="0" max="30" step="0.01"></div></div>
+          <label for="evidenceFile">Screenshot (PNG, JPEG, or WebP)</label><input id="evidenceFile" type="file" accept="image/png,image/jpeg,image/webp"><button id="attachEvidence" type="button" class="quiet">Attach screenshot</button>
+          <div id="evidenceList"></div>
+          <label for="reviewModel">Review model ID (optional override)</label><input id="reviewModel" maxlength="160" placeholder="Use an image-capable model when attaching screenshots">
+        </details>
+        <div class="actions"><button id="critique" type="button" class="quiet">Ask AI to inspect this evidence</button><button id="previewParent" type="button" class="quiet">Preview previous version</button></div>
+        <p class="small">AI inspection makes one API call with up to 2,500 output tokens. Without screenshots it reviews pose data, not rendered appearance. Image support depends on your chosen model.</p>
+        <div id="aiFindings"></div>
+        <form id="feedbackForm">
+          <h3>How does this version feel?</h3>
+          <fieldset class="verdicts"><legend>Your decision</legend><label class="check"><input type="radio" name="overall" value="accept" required>Keep this version</label><label class="check"><input type="radio" name="overall" value="refine">Refine it</label><label class="check"><input type="radio" name="overall" value="redo">Try a different approach</label></fieldset>
+          <div id="reviewQuestions"></div>
+          <label for="liked">What should stay?</label><textarea id="liked" rows="2" maxlength="4000" placeholder="Keep the arm swing and the timing of the landing."></textarea>
+          <label for="changes">What should change?</label><textarea id="changes" rows="3" maxlength="4000" placeholder="The landing needs more weight. Lower the hips, bend the knees more, and slow the recovery."></textarea>
+          <label class="check"><input id="watchedPreview" type="checkbox" required>I watched this version's preview.</label>
+          <div class="actions"><button id="saveFeedback" type="submit">Save my feedback</button><button id="reviseFeedback" type="button" class="primary" disabled>Make the requested changes</button></div>
+        </form>
+        <p id="feedbackStatus" class="small" role="status"></p>
+      </div>
+    </section>
+  </div>
+  <footer>Animation and VFX drafts. Rigging and Blender tools remain available through an MCP client. <span>No asset publishing or gameplay changes.</span></footer>
+</main>
+</body></html>

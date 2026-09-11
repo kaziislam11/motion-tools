@@ -24,10 +24,16 @@ export class Library {
     asset.recipe = recipeSchema.parse(asset.recipe);
     return asset;
   }
-  async list(offset = 0, limit = 30) {
+  async list(offset = 0, limit = 30, kind?: Recipe['kind']) {
     await mkdir(this.directory, { recursive: true });
     const ids = (await readdir(this.directory)).filter(n => /^[0-9a-f-]{36}\.json$/.test(n)).sort();
-    const assets = await Promise.all(ids.slice(offset, offset + limit).map(n => this.get(n.slice(0, -5))));
-    return { total: ids.length, offset, assets: assets.map(({ recipe, ...meta }) => ({ ...meta, name: recipe.name, kind: recipe.kind })), nextOffset: offset + limit < ids.length ? offset + limit : null };
+    const all: { id: string; createdAt: string; parentId?: string; name: string; kind: Recipe['kind'] }[] = [];
+    // Keep only metadata between batches, instead of retaining every full animation in memory.
+    for (let start = 0; start < ids.length; start += 16) {
+      const batch = await Promise.all(ids.slice(start, start + 16).map(n => this.get(n.slice(0, -5))));
+      for (const { recipe, ...meta } of batch) if (!kind || recipe.kind === kind) all.push({ ...meta, name: recipe.name, kind: recipe.kind });
+    }
+    all.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
+    return { total: all.length, offset, assets: all.slice(offset, offset + limit), nextOffset: offset + limit < all.length ? offset + limit : null };
   }
 }

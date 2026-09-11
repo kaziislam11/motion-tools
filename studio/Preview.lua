@@ -1,6 +1,6 @@
 local RunService = game:GetService("RunService")
 local Preview = {}
-local active, connection, priorArchivable
+local active, connection
 
 function Preview.model() return active end
 
@@ -10,22 +10,30 @@ function Preview.stop()
     return { stopped = true }
 end
 
-function Preview.start(model, payload)
-    Preview.stop()
-    assert(not RunService:IsRunning(), "Stop Play/Test mode before previewing.")
-    priorArchivable = model.Archivable
+function Preview.copy(model)
+    local priorArchivable = model.Archivable
     model.Archivable = true
     local ok, clone = pcall(function() return model:Clone() end)
     model.Archivable = priorArchivable
     assert(ok and clone, "Could not clone the selected rig.")
+    local prepared, err = pcall(function()
+        for _, item in clone:GetDescendants() do
+            if item:IsA("LuaSourceContainer") then item:Destroy() end
+            if item:IsA("BasePart") then item.Anchored = true; item.CanCollide = false; item.CanQuery = false; item.CanTouch = false end
+            if item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") then item.Enabled = false end
+        end
+    end)
+    if not prepared then clone:Destroy(); error(err) end
+    return clone
+end
+
+function Preview.start(model, payload)
+    Preview.stop()
+    assert(not RunService:IsRunning(), "Stop Play/Test mode before previewing.")
+    local clone = Preview.copy(model)
     active = clone
     local success, result = pcall(function()
         clone.Name = "MotionPreview_" .. model.Name
-        for _, item in clone:GetDescendants() do
-            if item:IsA("LuaSourceContainer") then item:Destroy() end
-            if item:IsA("BasePart") then item.Anchored = true; item.CanCollide = false end
-            if item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") then item.Enabled = false end
-        end
         clone.Parent = workspace
         local size = model:GetExtentsSize()
         clone:PivotTo(model:GetPivot() * CFrame.new(size.X + 3, 0, 0))
@@ -48,15 +56,7 @@ function Preview.start(model, payload)
                 local time = elapsed
                 if payload.animation then
                     time = payload.sampleTime or (payload.animation.loop and (elapsed % payload.animation.duration) or math.min(elapsed, payload.animation.duration))
-                    for _, node in nodes do
-                        if node.target then
-                            local value = tracks[node.name] and Authoring.sample(tracks[node.name], time) or CFrame.identity
-                            if Rig.isPartJoint(node.target) then
-                                -- Anchored clone parts do not move via the physics assembly solver.
-                                node.target.Part1.CFrame = node.target.Part0.CFrame * node.target.C0 * value * node.target.C1:Inverse()
-                            else node.target.Transform = value end
-                        end
-                    end
+                    Authoring.apply(nodes, tracks, time)
                 end
                 for _, accessory in accessories do
                     accessory.handle.CFrame = accessory.body.CFrame * accessory.offset

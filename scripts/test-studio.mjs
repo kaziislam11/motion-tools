@@ -12,3 +12,22 @@ if (result.error) throw result.error;
 process.stdout.write(result.stdout);
 process.stderr.write(result.stderr);
 process.exitCode = result.status ?? 1;
+const plugin = await readFile('studio/Plugin.lua', 'utf8');
+const pluginTests = (await readFile('tests/plugin-library.luau', 'utf8')).replace('-- INSERT_PLUGIN_HERE', plugin);
+await writeFile('.local/plugin-library-tests.luau', pluginTests);
+const panelResult = spawnSync(executable, ['.local/plugin-library-tests.luau'], { encoding: 'utf8' });
+if (panelResult.error) throw panelResult.error;
+process.stdout.write(panelResult.stdout);
+process.stderr.write(panelResult.stderr);
+if (panelResult.status !== 0) process.exitCode = panelResult.status ?? 1;
+let inspectionTests = await readFile('tests/motion-inspection.luau', 'utf8');
+for (const [marker, file] of [['AUTHORING', 'Authoring'], ['PREVIEW', 'Preview'], ['INSPECTION', 'MotionInspection']]) {
+  const module = await readFile(`studio/${file}.lua`, 'utf8');
+  inspectionTests = inspectionTests.replace(`-- INSERT_${marker}_HERE`, () => module);
+}
+await writeFile('.local/motion-inspection-tests.luau', inspectionTests);
+const inspectionResult = spawnSync(executable, ['.local/motion-inspection-tests.luau'], { encoding: 'utf8' });
+if (inspectionResult.error) throw inspectionResult.error;
+process.stdout.write(inspectionResult.stdout);
+process.stderr.write(inspectionResult.stderr);
+if (inspectionResult.status !== 0) process.exitCode = inspectionResult.status ?? 1;

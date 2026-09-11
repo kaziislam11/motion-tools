@@ -48,7 +48,8 @@ test('real MCP stdio client discovers tools, authors revisions, and reports offl
   try {
     await client.connect(transport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 27);
+    assert.equal(tools.tools.length, 30);
+    assert.ok(tools.tools.some(t => t.name === 'motion_review_start'));
     assert.ok(tools.tools.some(t => t.name === 'motion_workflow_start'));
     assert.ok(tools.tools.some(t => t.name === 'motion_studio_capture_frame'));
     assert.ok(tools.tools.some(t => t.name === 'motion_studio_capture_chunk'));

@@ -1,5 +1,5 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-const parts = ['Rig', 'EnergyColumn', 'Authoring', 'Preview', 'ReviewCapture'];
+const parts = ['Rig', 'EnergyColumn', 'Authoring', 'Preview', 'ReviewCapture', 'MotionInspection'];
 await mkdir('dist', { recursive: true });
 let output = '-- Roblox Motion Tools. Generated from studio/*.lua.\n';
 for (const name of parts) {

@@ -164,7 +164,7 @@ function Rig.snapshot()
             table.insert(selected, { id = Rig.id(model), name = model.Name })
         end
     end
-    return { place = game.Name, placeId = tostring(game.PlaceId), selection = selected }
+    return { place = game.Name, placeId = tostring(game.PlaceId), selection = selected, pluginVersion = "1.0.0", features = { poseSampling = true, animationLibrary = true } }
 end
 
 function Rig.connect(model, payload)

@@ -1,21 +1,29 @@
 # Verification
 
-Last checked: 2026-09-06.
+Last checked: September 11, 2026 for v1.0.0.
 
-## Verified automatically
+## Current automated checks
 
-- TypeScript strict build.
-- Seven Node tests covering loop closure and timing; invalid recipe rejection; immutable revisions and path traversal rejection; session isolation; at-most-once delivery; queued command expiration; unknown outcomes; authenticated HTTP; and actual MCP client/server stdio tool discovery, authoring, readback, revisions and offline errors.
-- Generated plugin compiles with official Luau 0.737.
-- Actual portable Blender 4.5.0 test: a synthetic unrigged mesh receives a 16-bone armature and automatic weights; all vertices are weighted, normalized and limited to four deform influences; an action is created; evaluated vertices move during animation; FBX re-import retains the mesh, 16 bones and animation; the input .blend is byte-identical afterward.
-- Setup generates a paired plugin and absolute-path JSON/TOML MCP configurations.
+- TypeScript strict build and 36 Node tests pass. Coverage includes recipe validation, immutable assets, MCP discovery, queue acknowledgements, local API authentication, provider adapters with mock responses, Windows DPAPI key storage, library pagination, inspection metrics, evidence validation, feedback persistence, concurrent writes, cancellation, and feedback-driven revisions.
+- Luau fixtures pass for accessory following, energy-column travel/hold/fade, the animation dropdown with 101 clips, shared joint evaluation, estimated ground bounds, source preservation, and inspection cleanup.
+- The packaged plugin compiles with official Luau 0.737.
+- The local browser walkthrough with simulated Studio and provider responses covers generation, inspection, questions, feedback, a child revision, previous-version preview, explicit acceptance, and reload. No console warnings or errors were observed.
 
-## Still requires native Studio validation
+Run `npm.cmd test` for the Node checks. With Luau installed, run `node scripts/test-studio.mjs`; set `LUAU_EXECUTABLE` if needed. Test fixtures do not measure artistic quality or establish native Roblox engine behavior.
 
-The plugin has not yet been exercised inside Roblox Studio. HTTP simulation and Luau compilation are not substitutes for those checks. Follow the README checklist for preview positioning, particle rendering, Animation Editor loading, undo behavior and disconnection handling.
+## Previously exercised
 
-## Practical limitations
+An earlier portable Blender 4.5.0 smoke test created a synthetic mesh, fitted a 16-bone armature, bound normalized weights with at most four deform influences, created an action, checked evaluated deformation, and re-imported the FBX. The input file stayed byte-identical. The Blender implementation was not changed for v1.
 
-This first implementation is an MCP authoring backend, a small Studio connection panel and a Blender worker. It does not yet include a standalone visual editor or embedded AI chat. Starter animations need artistic refinement. Humanoid guide fitting and valid numeric weights do not guarantee good deformation on an arbitrary model. Name mapping does not retarget local bone axes. Native VFX currently covers particle emitters; beams, trails and custom mesh effects are future work.
+Earlier Studio checks inspected an R15 avatar using AnimationConstraints and received acknowledgements for previews and animation/VFX saves. The animation-library update was also exercised with a saved backflip preview before the v1 inspector was added.
 
-Generated and test data is in ignored `.local/` and `artifacts/`. Portable Blender and Luau are project-local test dependencies, not system installation replacements.
+## Still requires live validation
+
+- The new v1 pose sampler on a real Studio rig. Studio disconnected during release testing, and this release proceeded with automated checks.
+- Generation and image critique with real paid provider accounts. Request formats, validation, and failures were tested with mocks.
+- Visual quality, native Animation Editor loading, undo behavior, physics, cloth, and mesh deformation in a game.
+- Automatic viewport screenshots. The tested native capture API returned `Feature not supported yet.` Manual screenshots are supported instead.
+
+The six rendered evaluation cases remain a plan, not a completed quality benchmark. See [review implementation status](review-implementation-status.md).
+
+Generated data, credentials, and test artifacts stay in ignored `.local/` and `artifacts/`. Portable Blender and Luau are project-local test dependencies.

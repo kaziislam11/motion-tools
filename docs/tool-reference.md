@@ -9,6 +9,7 @@
 | `motion_workflow_revise_brief` | Preserve feedback or a revised approach and restart stage review |
 | `motion_workflow_attach_candidate`, `motion_workflow_read_evidence`, `motion_workflow_review` | Attach fingerprinted files, inspect images, and record requirement and exclusion findings |
 | `motion_library_list`, `motion_library_read`, `motion_library_save` | Browse recipes and save immutable revisions |
+| `motion_review_start`, `motion_review_read`, `motion_review_feedback` | Inspect a version on its Studio rig, ask the user for feedback, and save the user's decision |
 | `motion_animation_create`, `motion_vfx_create` | Create editable starter recipes |
 | `motion_studio_sessions`, `motion_studio_inspect` | Find selected rigs and inspect their joints |
 | `motion_studio_connect_parts` | Add a Motor6D between rigid parts |
@@ -32,12 +33,25 @@ Scene operations return a job ID. Call `motion_studio_job` to check its status:
 - `succeeded` or `failed`: confirmed by the plugin
 - `expired`: never delivered within the allowed time
 - `unknown`: delivered, but no result arrived in time
+- `cancelled`: an inspection was cancelled before its command was delivered
 
 Inspect the scene before retrying an unknown result. Commands are delivered only once and target the model ID captured during inspection. Changing the selection does not redirect them.
 
 Rigid-part connections preserve rest positions and anchoring. Check anchors before using the rig in gameplay. Duplicate animated names and joint cycles are rejected. Rigs that combine Bone and Motor6D animation need a separately selected sub-rig in this version.
 
 ## Animation recipes
+
+### Inspection and feedback
+
+`motion_review_start` takes `assetId`, optional `sessionId` and `rigId` together, `motionMode` (`unknown`, `in_place`, `root_motion`, or `stationary`), and `preview` (default true). It starts a background inspection and returns a review ID. It makes no provider API call. Without a live rig, it reports recipe-only evidence.
+
+Poll `motion_review_read` with `reviewId` until inspection finishes. The compact response includes measured findings, limitations, feedback questions, and the current review revision. Set `includeSamples: true` for actual sampled joint positions. Ask the user the questions and wait for their answers.
+
+Use `motion_review_feedback` with `reviewId`, the current `revision`, and `feedback`: `overall` (`accept`, `refine`, or `redo`), `watchedPreview: true`, `liked`, `changes`, and `answers` containing `questionId` and `answer`. Only record feedback the user actually supplied. Acceptance requires no outstanding change request; refinement requires a description of what to change. Stale revisions are rejected. MCP feedback is labeled as reported by the client; the server cannot verify that a chat client asked its user.
+
+For a revised MCP-authored recipe, call `motion_library_save` with the reviewed asset's `parentId`, then inspect the new ID. The local browser panel also offers provider-powered generation directly from a saved feedback record. See [the review guide](animation-review.md) for evidence limits and storage.
+
+### Format
 
 Each track has a joint name and at least two keys spanning zero through the animation's duration. A key contains:
 
